@@ -1,15 +1,18 @@
+
+-- TODO: Check if keybinding can be configured by user.
+-- TODO: Check if closing maches open character. Prob not needed since it would be a an error.
+
 function string.insert(str1, str2, pos)
     return str1:sub(1, pos) .. str2 .. str1:sub(pos + 1)
 end
 
 function RunSmartClose()
-    print("Running")
     local current_line = vim.api.nvim_get_current_line()
     local row, col = unpack(vim.api.nvim_win_get_cursor(0))
 
     local stack = {}
 
-    -- Define stack functions
+    -- Define stack functions.
 
     function stack.push(item)
         table.insert(stack, item)
@@ -21,14 +24,6 @@ function RunSmartClose()
 
     -- Search current line and add to stack.
 
-    -- TODO: Check cursor pos when popping.     DONE!
-    -- TODO: Move cursor if next char matches pop.      DONE!
-    -- TODO: Check if keybinding can be configured by user.
-    -- TODO: Ignore if there is a break char before, ex: \ or %.    DONE!
-    -- TODO: Check if closing maches open character.
-    -- TODO: Possibly add " and '   DONE!
-
-
     local single_quote_opened = false
     local double_quote_opened = false
     local pos = 1
@@ -37,7 +32,7 @@ function RunSmartClose()
         local escape1_start_pos = current_line:find('\\', start_pos - 1, true)
         local escape2_start_pos = current_line:find('%', pos, true)
 
-        -- Ignore text after cursor
+        -- Ignore text after cursor.
         if start_pos > col then
             break
         end
@@ -49,6 +44,7 @@ function RunSmartClose()
             elseif c == ')' or c == '}' or c == ']' or c == '>' then
                 stack.pop()
             else
+                -- Handle " and '.
                 if c == '\'' then
                     if single_quote_opened then
                         stack.pop()
@@ -70,14 +66,14 @@ function RunSmartClose()
         pos = end_pos + 1
     end
 
-    -- Check final character
+    -- Check final character.
 
     local c_last = stack.pop()
     if c_last == nil then
         return
     end
 
-    -- print("Last popped ", c_last)
+    -- Pick char to insert.
     local c_insert = ""
     if c_last == "(" then
         c_insert = ")"
@@ -97,9 +93,8 @@ function RunSmartClose()
     local new_line = string.insert(current_line, c_insert, col)
     -- Write line.
     local next_c = string.sub(current_line, col + 1, col + 1)
-    --print("Next: ", next_c)
-    -- print("Insert: ", c_insert)
     if c_insert ~= next_c then
+        -- Will only insert char if the next char is not the same.
         vim.api.nvim_buf_set_lines(0, row - 1, row, true, { new_line })
     end
     -- Move cursor.
