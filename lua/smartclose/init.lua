@@ -1,7 +1,4 @@
 
--- TODO: Check if keybinding can be configured by user.
--- TODO: Check if closing maches open character. Prob not needed since it would be a an error.
-
 function string.insert(str1, str2, pos)
     return str1:sub(1, pos) .. str2 .. str1:sub(pos + 1)
 end
@@ -101,5 +98,25 @@ function RunSmartClose()
     vim.api.nvim_win_set_cursor(0, { row, col + 1 })
 end
 
--- Setup keybinding
-vim.api.nvim_set_keymap("i", "<C-s>", "<cmd>lua RunSmartClose()<CR>", { noremap = true, silent = true })
+-- Set keybinding.
+local function set_keymap(keymap)
+    vim.api.nvim_set_keymap("i", keymap, "<cmd>lua RunSmartClose()<CR>", { noremap = true, silent = true })
+end
+
+-- Setup plugin with default keymap.
+local default_keymap = "<C-s>"
+local function setup()
+    set_keymap(default_keymap)
+end
+
+-- Set custom keymap.
+local function set_custom_keymap(keymap)
+    set_keymap(keymap)
+    print("Custom")
+end
+
+--setup()
+
+return{
+    set_keymap = set_custom_keymap
+}
