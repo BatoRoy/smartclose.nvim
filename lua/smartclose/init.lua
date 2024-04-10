@@ -24,19 +24,28 @@ function RunSmartClose()
 
     -- Search current line and add to stack.
 
-    -- TODO: Check cursor pos when popping.
-    -- TODO: Move cursor if too far to left.
+    -- TODO: Check cursor pos when popping.     DONE!
+    -- TODO: Move cursor if next char matches pop.
     -- TODO: Check if keybinding can be configured by user.
-    -- TODO: Ignore if there is a break char before, ex: \ or %.
+    -- TODO: Ignore if there is a break char before, ex: \ or %.    DONE!
     -- TODO: Check if closing maches open character.
 
     local pos = 1
     for c in current_line:gmatch("[%(%[{<%>}%]%)]") do
         local start_pos, end_pos = current_line:find(c, pos, true)
+        local escape1_start_pos = current_line:find('\\', start_pos - 1, true)
+        local escape2_start_pos = current_line:find('%', pos, true)
+        
+        if start_pos > col then
+            break
+        end
+
         if c == '(' or c == '{' or c == '[' or c == '<' then
+        if start_pos > 1 and (escape1_start_pos == start_pos - 1 or escape2_start_pos == start_pos - 1) then
+            -- Char before is an escape character.
+        else
             stack.push(c)
-            --print("Pushed ", c)
-            --print("Found match: ", c, " at ", start_pos)
+        end
         elseif c == ')' or c == '}' or c == ']' or c == '>' then
             local popped = stack.pop()
         else
@@ -65,7 +74,7 @@ function RunSmartClose()
     end
 
     -- Make new line.
-    local new_line = string.insert(current_line, c_insert, col + 1)
+    local new_line = string.insert(current_line, c_insert, col)
     -- Write line.
     vim.api.nvim_buf_set_lines(0, row - 1, row, true, { new_line })
     -- Move cursor.
