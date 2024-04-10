@@ -26,10 +26,13 @@ function RunSmartClose()
     -- TODO: Check if keybinding can be configured by user.
     -- TODO: Ignore if there is a break char before, ex: \ or %.    DONE!
     -- TODO: Check if closing maches open character.
-    -- TODO: Possibly add " and '
+    -- TODO: Possibly add " and '   DONE!
 
+
+    local single_quote_opened = false
+    local double_quote_opened = false
     local pos = 1
-    for c in current_line:gmatch("[%(%[{<%>}%]%)]") do
+    for c in current_line:gmatch("[%(%[{<%>}%]%)\"\']") do
         local start_pos, end_pos = current_line:find(c, pos, true)
         local escape1_start_pos = current_line:find('\\', start_pos - 1, true)
         local escape2_start_pos = current_line:find('%', pos, true)
@@ -39,16 +42,30 @@ function RunSmartClose()
             break
         end
 
-        if c == '(' or c == '{' or c == '[' or c == '<' then
-            if start_pos > 1 and (escape1_start_pos == start_pos - 1 or escape2_start_pos == start_pos - 1) then
+        if start_pos < 1 or (escape1_start_pos ~= start_pos - 1 and escape2_start_pos ~= start_pos - 1) then
+            if c == '(' or c == '{' or c == '[' or c == '<' then
                 -- Char before is an escape character.
-            else
                 stack.push(c)
+            elseif c == ')' or c == '}' or c == ']' or c == '>' then
+                stack.pop()
+            else
+                if c == '\'' then
+                    if single_quote_opened then
+                        stack.pop()
+                    else
+                        stack.push(c)
+                    end
+                    single_quote_opened = not single_quote_opened
+                end
+                if c == '\"' then
+                    if double_quote_opened then
+                        stack.pop()
+                    else
+                        stack.push(c)
+                    end
+                    double_quote_opened = not double_quote_opened
+                end
             end
-        elseif c == ')' or c == '}' or c == ']' or c == '>' then
-            stack.pop()
-        else
-            -- print("Skipped ",c)
         end
         pos = end_pos + 1
     end
@@ -70,6 +87,10 @@ function RunSmartClose()
         c_insert = "}"
     elseif c_last == "<" then
         c_insert = ">"
+    elseif c_last == "\'" then
+        c_insert = "\'"
+    elseif c_last == "\"" then
+        c_insert = "\""
     end
 
     -- Make new line.
