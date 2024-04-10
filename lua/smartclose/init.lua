@@ -1,6 +1,3 @@
-local open = "({[<"
-local closed = ")}]>"
-
 function string.insert(str1, str2, pos)
     return str1:sub(1, pos) .. str2 .. str1:sub(pos + 1)
 end
@@ -25,29 +22,31 @@ function RunSmartClose()
     -- Search current line and add to stack.
 
     -- TODO: Check cursor pos when popping.     DONE!
-    -- TODO: Move cursor if next char matches pop.
+    -- TODO: Move cursor if next char matches pop.      DONE!
     -- TODO: Check if keybinding can be configured by user.
     -- TODO: Ignore if there is a break char before, ex: \ or %.    DONE!
     -- TODO: Check if closing maches open character.
+    -- TODO: Possibly add " and '
 
     local pos = 1
     for c in current_line:gmatch("[%(%[{<%>}%]%)]") do
         local start_pos, end_pos = current_line:find(c, pos, true)
         local escape1_start_pos = current_line:find('\\', start_pos - 1, true)
         local escape2_start_pos = current_line:find('%', pos, true)
-        
+
+        -- Ignore text after cursor
         if start_pos > col then
             break
         end
 
         if c == '(' or c == '{' or c == '[' or c == '<' then
-        if start_pos > 1 and (escape1_start_pos == start_pos - 1 or escape2_start_pos == start_pos - 1) then
-            -- Char before is an escape character.
-        else
-            stack.push(c)
-        end
+            if start_pos > 1 and (escape1_start_pos == start_pos - 1 or escape2_start_pos == start_pos - 1) then
+                -- Char before is an escape character.
+            else
+                stack.push(c)
+            end
         elseif c == ')' or c == '}' or c == ']' or c == '>' then
-            local popped = stack.pop()
+            stack.pop()
         else
             -- print("Skipped ",c)
         end
@@ -76,7 +75,12 @@ function RunSmartClose()
     -- Make new line.
     local new_line = string.insert(current_line, c_insert, col)
     -- Write line.
-    vim.api.nvim_buf_set_lines(0, row - 1, row, true, { new_line })
+    local next_c = string.sub(current_line, col + 1, col + 1)
+    --print("Next: ", next_c)
+    -- print("Insert: ", c_insert)
+    if c_insert ~= next_c then
+        vim.api.nvim_buf_set_lines(0, row - 1, row, true, { new_line })
+    end
     -- Move cursor.
     vim.api.nvim_win_set_cursor(0, { row, col + 1 })
 end
