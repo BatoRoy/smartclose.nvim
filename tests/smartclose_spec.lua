@@ -1,0 +1,5 @@
+describe("smartclose", function ()
+    it("can be required", function ()
+        require("smartclose")
+    end)
+end)
