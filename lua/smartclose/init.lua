@@ -1,12 +1,11 @@
 
+-- TODO: Write tests.
+
 function string.insert(str1, str2, pos)
     return str1:sub(1, pos) .. str2 .. str1:sub(pos + 1)
 end
 
-function RunSmartClose()
-    local current_line = vim.api.nvim_get_current_line()
-    local row, col = unpack(vim.api.nvim_win_get_cursor(0))
-
+function _GetNextChar(current_line, col)
     local stack = {}
 
     -- Define stack functions.
@@ -85,7 +84,17 @@ function RunSmartClose()
     elseif c_last == "\"" then
         c_insert = "\""
     end
+    return c_insert
+end
 
+function RunSmartClose()
+    local current_line = vim.api.nvim_get_current_line()
+    local row, col = unpack(vim.api.nvim_win_get_cursor(0))
+
+    local c_insert = _GetNextChar(current_line, col)
+    if c_insert == nil then
+        return
+    end
     -- Make new line.
     local new_line = string.insert(current_line, c_insert, col)
     -- Write line.
@@ -118,5 +127,6 @@ end
 --setup()
 
 return{
-    set_keymap = set_custom_keymap
+    set_keymap = set_custom_keymap,
+    _GetNextChar = _GetNextChar
 }
