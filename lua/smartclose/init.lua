@@ -1,8 +1,14 @@
 
--- TODO: Write tests.
-
 function string.insert(str1, str2, pos)
     return str1:sub(1, pos) .. str2 .. str1:sub(pos + 1)
+end
+
+function _RemoveChar(stack, c)
+    for i, value in ipairs(stack) do
+        if value == c then
+            table.remove(stack, i)
+        end
+    end
 end
 
 function _GetNextChar(current_line, col)
@@ -43,7 +49,8 @@ function _GetNextChar(current_line, col)
                 -- Handle " and '.
                 if c == '\'' then
                     if single_quote_opened then
-                        stack.pop()
+                        --stack.pop()
+                        _RemoveChar(stack, c)
                     else
                         stack.push(c)
                     end
@@ -51,7 +58,8 @@ function _GetNextChar(current_line, col)
                 end
                 if c == '\"' then
                     if double_quote_opened then
-                        stack.pop()
+                        --stack.pop()
+                        _RemoveChar(stack, c)
                     else
                         stack.push(c)
                     end
