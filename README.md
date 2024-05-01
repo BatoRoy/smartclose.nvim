@@ -9,7 +9,7 @@ use('BatoRoy/smartclose.nvim')
 ```
 ## Setup
 
-To initialize the plugin, you need to require "smartclose". Use the *set_keymap* function to change the keymap for triggering the plugin. The default keymap is set to *Ctrl + s*.
+To initialize the plugin, you need to require `smartclose`. Use the `set_keymap` function to change the keymap for triggering the plugin. The default keymap is set to `Ctrl-s`.
 ```lua
 require("smartclose").set_keymap("<C-s>")
 ```
