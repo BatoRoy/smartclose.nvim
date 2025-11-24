@@ -39,9 +39,7 @@ end
 
 function _GetNextChar(current_line, col)
     local stack = {}
-
     -- Define stack functions.
-
     function stack.push(item)
         table.insert(stack, item)
     end
@@ -51,7 +49,6 @@ function _GetNextChar(current_line, col)
     end
 
     -- Search current line and add to stack.
-
     local all_characters = "[%(%[{<%>}%]%)\"\']"
     local normal_characters = "[%(%[{}%]%)\"\']"
 
@@ -144,15 +141,99 @@ function RunSmartClose()
     vim.api.nvim_win_set_cursor(0, { row, col + 1 })
 end
 
+function RunSmartEnter()
+    local current_line = vim.api.nvim_get_current_line()
+    local row, col = unpack(vim.api.nvim_win_get_cursor(0))
+
+    -- Get the character before and after cursor.
+    local char_before = string.sub(current_line, col, col)
+    local char_after = string.sub(current_line, col + 1, col + 1)
+
+    -- Check if cursor is between matching pairs.
+    local is_open = char_before == '(' or char_before == '{' or char_before == '['
+    local matching_close = {
+        ['('] = ')',
+        ['{'] = '}',
+        ['['] = ']'
+    }
+
+    if not is_open then
+        -- Not after an opening bracket, do normal enter.
+        vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<CR>', true, false, true), 'n', false)
+        return
+    end
+
+    local expected_close = matching_close[char_before]
+    local has_matching_close = (char_after == expected_close)
+
+    -- Get the indentation of the current line.
+    local indent = current_line:match("^%s*")
+    local indent_char = vim.bo.expandtab and string.rep(" ", vim.bo.shiftwidth) or "\t"
+
+    -- Split the line at cursor position.
+    local line_before = string.sub(current_line, 1, col)
+    local line_after = string.sub(current_line, col + 1)
+
+    if has_matching_close then
+        -- Already has matching close, just split it across lines.
+        -- Remove the closing char from line_after since it is already there.
+        line_after = string.sub(line_after, 2)
+
+        -- Create three lines: current with (, empty indented, and closing )
+        local new_lines = {
+            line_before,
+            indent .. indent_char,
+            indent .. expected_close .. line_after
+        }
+
+        vim.api.nvim_buf_set_lines(0, row - 1, row, true, new_lines)
+        -- Move cursor to the empty line with proper indentation.
+        vim.api.nvim_win_set_cursor(0, { row + 1, #indent + #indent_char })
+    else
+        -- No matching close, need to add it.
+        local c_insert = _GetNextChar(current_line, col)
+
+        if c_insert == expected_close then
+            -- Create three lines with closing bracket.
+            local new_lines = {
+                line_before,
+                indent .. indent_char,
+                indent .. expected_close .. line_after
+            }
+
+            vim.api.nvim_buf_set_lines(0, row - 1, row, true, new_lines)
+            -- Move cursor to the empty line with proper indentation
+            vim.api.nvim_win_set_cursor(0, { row + 1, #indent + #indent_char })
+        else
+            -- Stack doesn't require closing, do normal enter
+            vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<CR>', true, false, true), 'n', false)
+        end
+    end
+end
+
+
 -- Set keybinding.
 local function set_keymap(keymap)
     vim.api.nvim_set_keymap("i", keymap, "<cmd>lua RunSmartClose()<CR>", { noremap = true, silent = true })
 end
 
+local function set_enter_keymap()
+    vim.api.nvim_set_keymap("i", "<CR>", "<cmd>lua RunSmartEnter()<CR>", { noremap = true, silent = true })
+end
+
 -- Setup plugin with default keymap.
-local default_keymap = "<C-s>"
-local function setup()
-    set_keymap(default_keymap)
+local default_keymap = "<C-d>"
+local function setup(opts)
+    opts = opts or {}
+
+    -- Set smart close keymap (use custom or default).
+    local keymap = opts.keymap or default_keymap
+    set_keymap(keymap)
+
+    -- Enable smart enter by default unless explicitly disabled.
+    if opts.enable_smart_enter ~= false then
+        set_enter_keymap()
+    end
 end
 
 -- Set custom keymap.
@@ -161,9 +242,11 @@ local function set_custom_keymap(keymap)
     print("Custom")
 end
 
---setup()
+-- setup()
 
 return{
+    setup = setup,
     set_keymap = set_custom_keymap,
+    set_enter_keymap = set_enter_keymap,
     _GetNextChar = _GetNextChar
 }
