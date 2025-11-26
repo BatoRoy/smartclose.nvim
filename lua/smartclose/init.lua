@@ -49,11 +49,12 @@ function _GetNextChar(current_line, col)
     end
 
     -- Search current line and add to stack.
-    local all_characters = "[%(%[{<%>}%]%)\"\']"
-    local normal_characters = "[%(%[{}%]%)\"\']"
+    local all_characters = "[%(%[{<%>}%]%)\"\'`]"
+    local normal_characters = "[%(%[{}%]%)\"\'`]"
 
     local single_quote_opened = false
     local double_quote_opened = false
+    local special_single_quote_opened = false
     local pos = 1
     for c in current_line:gmatch(normal_characters) do
         local start_pos, end_pos = current_line:find(c, pos, true)
@@ -72,7 +73,7 @@ function _GetNextChar(current_line, col)
             elseif c == ')' or c == '}' or c == ']' or c == '>' then
                 stack.pop()
             else
-                -- Handle " and '.
+                -- Handle these: "  ' `
                 if c == '\'' then
                     if single_quote_opened then
                         --stack.pop()
@@ -90,6 +91,15 @@ function _GetNextChar(current_line, col)
                         stack.push(c)
                     end
                     double_quote_opened = not double_quote_opened
+                end
+                if c == '`' then
+                    if special_single_quote_opened then
+                        --stack.pop()
+                        _RemoveChar(stack, c)
+                    else
+                        stack.push(c)
+                    end
+                    special_single_quote_opened = not special_single_quote_opened
                 end
             end
         end
@@ -117,6 +127,8 @@ function _GetNextChar(current_line, col)
         c_insert = "\'"
     elseif c_last == "\"" then
         c_insert = "\""
+    elseif c_last == "`" then
+        c_insert = "`"
     end
     return c_insert
 end

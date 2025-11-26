@@ -57,6 +57,7 @@ Supported pairs:
 - `[ ]`
 - `" "`
 - `' '`
+- ``` ` ` ```
 
 ## License
 MIT
