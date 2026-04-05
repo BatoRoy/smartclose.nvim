@@ -257,29 +257,37 @@ function RunSmartEnter()
         ['`'] = '`'
     }
 
-    -- Check if we're between matching delimiters.
-    local is_between_delimiters = false
+    local is_open = char_before == '(' or char_before == '{' or char_before == '[' or
+                    char_before == '"' or char_before == "'" or char_before == '`'
 
-    -- For brackets: opening before, closing after
-    if (char_before == '(' and char_after == ')') or
-        (char_before == '{' and char_after == '}') or
-        (char_before == '[' and char_after == ']') then
-        is_between_delimiters = true
-    end
-
-    -- For quotes and backticks: same character before and after.
-    if (char_before == '"' or char_before == "'" or char_before == '`') and
-        char_before == char_after then
-        is_between_delimiters = true
-    end
-
-    -- Only continue if we're between matching delimiters.
-    if not is_between_delimiters then
+    if not is_open then
         vim.api.nvim_feedkeys(
             vim.api.nvim_replace_termcodes('<CR>', true, false, true),
             'n',
             false
         )
+        return
+    end
+
+    local expected_close = matching_close[char_before]
+    local has_matching_close = (char_after == expected_close)
+
+    -- If cursor is between matching delimiters, split across lines without adding more.
+    if has_matching_close then
+        local indent = current_line:match("^%s*") or ""
+        local indent_char = vim.bo.expandtab and string.rep(" ", vim.bo.shiftwidth) or "\t"
+
+        local line_before = string.sub(current_line, 1, col)
+        local line_after = string.sub(current_line, col + 2)
+
+        local new_lines = {
+            line_before,
+            indent .. indent_char,
+            indent .. expected_close .. line_after
+        }
+
+        vim.api.nvim_buf_set_lines(0, row - 1, row, true, new_lines)
+        vim.api.nvim_win_set_cursor(0, { row + 1, #indent + #indent_char })
         return
     end
 
